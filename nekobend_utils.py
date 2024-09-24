@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import io
 import json
 import queue
 import re
@@ -16,8 +17,36 @@ class PwshRequests:
     pass
 
 
-class CmdObserver:
-    pass
+class CmdObserver():
+    is_running = False
+    _output = queue.Queue()
+
+    def __init__(self, cmd: str) -> None:
+        self.cmd = cmd
+
+    def __str__(self) -> str:
+        return self.cmd
+
+    def __repr__(self) -> str:
+        return self.cmd
+
+    def _run(self):
+        pass
+
+    def _read_stream(self, stream: io.TextIOWrapper, stream_type: str):
+        pass
+
+    def _put(self, stdout: str = None, stderr: str = None):
+        pass
+
+    def get(self) -> dict | None:
+        pass
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
 
 
 class Clipboard:
