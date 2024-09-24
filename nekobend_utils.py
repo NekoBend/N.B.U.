@@ -62,7 +62,7 @@ class ReString(str):
         result, num_subs = re.subn(pattern, repl, self, count, flags)
         return ReString(result), num_subs
 
-    def rsplit(self, pattern: str, maxsplit: int = 0, flags=0) -> List[Union['ReString', Any]]:
+    def resplit(self, pattern: str, maxsplit: int = 0, flags=0) -> List[Union['ReString', Any]]:
         results = re.split(pattern, self, maxsplit, flags)
         return [ReString(item) for item in results if isinstance(item, str)]
 
