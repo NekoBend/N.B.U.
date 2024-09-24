@@ -5,6 +5,7 @@ import json
 import multiprocessing
 import queue
 import re
+import select
 import subprocess
 import threading
 import time
@@ -18,7 +19,7 @@ class PwshRequests:
 
 
 class CmdObserver():
-    is_running = False
+    _is_running = False
     _output = queue.Queue()
 
     def __init__(self, cmd: str) -> None:
@@ -31,22 +32,58 @@ class CmdObserver():
         return self.cmd
 
     def _run(self):
-        pass
+        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=65536)
 
-    def _read_stream(self, stream: io.TextIOWrapper, stream_type: str):
-        pass
+        while self._is_running:
+            stdout_thread = threading.Thread(target=self._put_stream, args=(process.stdout,))
+            stderr_thread = threading.Thread(target=self._put_stream, args=(process.stderr, True))
+
+            stdout_thread.start()
+            stderr_thread.start()
+
+        stdout_thread.join()
+        stderr_thread.join()
+
+        process.terminate()
+
+    def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
+        readline = stream.readline().strip()
+
+        if not stderr:
+            self._put(stdout=readline)
+
+        else:
+            self._put(stderr=readline)
+            print(f'Warning: {readline}')
 
     def _put(self, stdout: str = None, stderr: str = None):
-        pass
+        self._output.put_nowait({
+            'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'stdout': stdout,
+            'stderr': stderr,
+        })
+
+    def is_empty(self) -> bool:
+        return self._output.empty()
 
     def get(self) -> dict | None:
-        pass
+        try:
+            return self._output.get(timeout=1)
+
+        except queue.Empty:
+            return False
+
+    def is_running(self) -> bool:
+        return self._is_running
 
     def start(self):
-        pass
+        self._is_running = True
+        self._thread = threading.Thread(target=self._run)
+        self._thread.start()
 
     def stop(self):
-        pass
+        self._is_running = False
+        self._thread.join()
 
 
 class Clipboard:
