@@ -1,3 +1,9 @@
+import os
+import sys
+import json
+import subprocess
+
+
 class PwshRequests:
     pass
 
