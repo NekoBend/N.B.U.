@@ -15,7 +15,22 @@ from typing import Callable, Union, List, Any, Iterator
 
 
 class PwshRequests:
-    pass
+
+    @staticmethod
+    def get(url: str, headers: dict) -> dict:
+        return
+
+    @staticmethod
+    def post(url: str, headers: dict, data: dict) -> dict:
+        return
+
+    @staticmethod
+    def put(url: str, headers: dict, data: dict) -> dict:
+        return
+
+    @staticmethod
+    def delete(url: str, headers: dict) -> dict:
+        return
 
 
 class CmdObserver():
