@@ -64,15 +64,16 @@ class CmdObserver():
     def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
         readline = stream.readline().strip()
 
-        if not stderr:
-            self._put(stdout=readline)
+        if readline:
+            if not stderr:
+                self._put(stdout=readline)
 
-        else:
-            self._put(stderr=readline)
-            print(f'Warning: {readline}')
+            else:
+                self._put(stderr=readline)
+                print(f'Warning: {readline}')
 
     def _put(self, stdout: str = None, stderr: str = None):
-        self._output.put_nowait({
+        self._output.put({
             'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'stdout': stdout,
             'stderr': stderr,
@@ -81,9 +82,9 @@ class CmdObserver():
     def is_empty(self) -> bool:
         return self._output.empty()
 
-    def get(self) -> dict | None:
+    def get(self, timeout: int = 1) -> dict | None:
         try:
-            return self._output.get(timeout=1)
+            return self._output.get(timeout=timeout)
 
         except queue.Empty:
             return False
