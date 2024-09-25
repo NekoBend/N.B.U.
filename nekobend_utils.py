@@ -47,7 +47,7 @@ class CmdObserver():
         return self.cmd
 
     def _run(self):
-        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=65536)
+        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536)
 
         while self._is_running:
             stdout_thread = threading.Thread(target=self._put_stream, args=(process.stdout,))
@@ -61,8 +61,16 @@ class CmdObserver():
 
         process.terminate()
 
+    def _auto_encode(self, stream: io.TextIOWrapper) -> str:
+        for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
+            try:
+                return stream.read().decode(encoding)
+
+            except UnicodeDecodeError:
+                continue
+
     def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
-        readline = stream.readline().strip()
+        readline = self._auto_encode(stream).strip()
 
         if readline:
             if not stderr:
