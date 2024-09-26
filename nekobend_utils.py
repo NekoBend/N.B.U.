@@ -72,7 +72,7 @@ class PwshRequests:
         return
 
 
-class CmdObserver():
+class CmdObserver:
     _is_running = False
     _output = queue.Queue()
 
@@ -100,14 +100,16 @@ class CmdObserver():
 
         process.terminate()
 
-    def _auto_encode(self, stream: io.TextIOWrapper) -> str:
+    def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
         for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
             try:
                 return stream.read().decode(encoding)
 
             except UnicodeDecodeError:
-                print(f'Warning: {encoding} is not supported.')
                 continue
+
+        print('Warning: Encoding is not supported.')
+        return stream.read()
 
     def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
         readline = self._auto_encode(stream).strip()
