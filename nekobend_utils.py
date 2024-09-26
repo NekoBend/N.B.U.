@@ -16,7 +16,7 @@ from typing import Callable, Union, List, Any, Iterator
 
 class PwshRequests:
 
-    def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
+    def _auto_encoder(stream: io.TextIOWrapper) -> str:
         for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
             try:
                 return stream.read().decode(encoding)
@@ -26,6 +26,18 @@ class PwshRequests:
 
         print('Warning: Encoding is not supported.')
         return stream.read()
+
+    def _run_cmd(cmd: str) -> dict:
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        stdout = PwshRequests._auto_encoder(process.stdout)
+        stderr = PwshRequests._auto_encoder(process.stderr)
+
+        if stderr:
+            print(f'Error: {stderr}')
+            return False
+
+        return stdout
 
     def _gen_cmd(cmd: str, headers: dict, body: dict = '') -> str:
         pwsh = 'powershell -Command'
@@ -52,16 +64,14 @@ class PwshRequests:
         cmd = f'-Method GET -Uri "{url}" -Headers $headers'
         request_cmd = PwshRequests._gen_cmd(cmd, headers)
 
-        print(request_cmd)
-        return request_cmd
+        return PwshRequests._run_cmd(request_cmd)
 
     @staticmethod
     def post(url: str, headers: dict, body: dict) -> dict:
         cmd = f'-Method POST -Uri "{url}" -Headers $headers -Body $body'
         request_cmd = PwshRequests._gen_cmd(cmd, headers, body)
 
-        print(request_cmd)
-        return request_cmd
+        return PwshRequests._run_cmd(request_cmd)
 
     @staticmethod
     def put(url: str, headers: dict, body: dict) -> dict:
