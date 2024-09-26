@@ -1,14 +1,14 @@
-import asyncio
-import functools
+# import asyncio
+# import functools
 import io
 import json
-import multiprocessing
+# import multiprocessing
 import queue
 import re
-import select
+# import select
 import subprocess
 import threading
-import time
+# import time
 
 from datetime import datetime
 from typing import Callable, Union, List, Any, Iterator
@@ -16,16 +16,55 @@ from typing import Callable, Union, List, Any, Iterator
 
 class PwshRequests:
 
+    def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
+        for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
+            try:
+                return stream.read().decode(encoding)
+
+            except UnicodeDecodeError:
+                continue
+
+        print('Warning: Encoding is not supported.')
+        return stream.read()
+
+    def _gen_cmd(cmd: str, headers: dict, body: dict = '') -> str:
+        pwsh = 'powershell -Command'
+
+        encode = '$encode = [System.Text.Encoding]::UTF8;'
+
+        headers = ' | '.join([
+            f"$headers = @{{}}; ('{json.dumps(headers)}'",
+            "ConvertFrom-Json).psobject.properties",
+            "ForEach-Object { $headers[$_.Name] = $_.Value.ToString() };",
+        ])
+
+        if body:
+            body = f"$body = '{json.dumps(body, ensure_ascii=False)}'; $body = $encode.GetBytes($body);"
+
+        rest = f'$response = Invoke-RestMethod {cmd} -ContentType "application/json";'
+
+        end = "$jsonResponse = $response | ConvertTo-Json -Depth 3; $encode.GetString($jsonResponse);"
+
+        return f'{pwsh} {encode} {headers} {body} {rest} {end}'
+
     @staticmethod
     def get(url: str, headers: dict) -> dict:
-        return
+        cmd = f'-Method GET -Uri "{url}" -Headers $headers'
+        request_cmd = PwshRequests._gen_cmd(cmd, headers)
+
+        print(request_cmd)
+        return request_cmd
 
     @staticmethod
-    def post(url: str, headers: dict, data: dict) -> dict:
-        return
+    def post(url: str, headers: dict, body: dict) -> dict:
+        cmd = f'-Method POST -Uri "{url}" -Headers $headers -Body $body'
+        request_cmd = PwshRequests._gen_cmd(cmd, headers, body)
+
+        print(request_cmd)
+        return request_cmd
 
     @staticmethod
-    def put(url: str, headers: dict, data: dict) -> dict:
+    def put(url: str, headers: dict, body: dict) -> dict:
         return
 
     @staticmethod
@@ -67,6 +106,7 @@ class CmdObserver():
                 return stream.read().decode(encoding)
 
             except UnicodeDecodeError:
+                print(f'Warning: {encoding} is not supported.')
                 continue
 
     def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
