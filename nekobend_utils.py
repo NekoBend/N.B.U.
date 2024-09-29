@@ -96,7 +96,7 @@ class CmdObserver:
         return self.cmd
 
     def _run(self):
-        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536)
+        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536, encoding='utf-8')
 
         while self._is_running:
             stdout_thread = threading.Thread(target=self._put_stream, args=(process.stdout,))
@@ -110,19 +110,19 @@ class CmdObserver:
 
         process.terminate()
 
-    def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
-        for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
-            try:
-                return stream.read().decode(encoding)
+    # def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
+    #     for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
+    #         try:
+    #             return stream.read().decode(encoding)
 
-            except UnicodeDecodeError:
-                continue
+    #         except UnicodeDecodeError:
+    #             continue
 
-        print('Warning: Encoding is not supported.')
-        return stream.read()
+    #     print('Warning: Encoding is not supported.')
+    #     return stream.read()
 
     def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
-        readline = self._auto_encode(stream).strip()
+        readline = stream.readline()
 
         if readline:
             if not stderr:
