@@ -9,6 +9,7 @@ import re
 import subprocess
 import threading
 # import time
+from collections import namedtuple
 
 from datetime import datetime
 from typing import Callable, Union, List, Any, Iterator
@@ -84,6 +85,7 @@ class PwshRequests:
 
 class CmdObserver:
     _is_running = False
+    _readline = namedtuple('Readline', ['time', 'stdout', 'stderr'])
     _output = queue.Queue()
 
     def __init__(self, cmd: str) -> None:
@@ -96,48 +98,40 @@ class CmdObserver:
         return self.cmd
 
     def _run(self):
-        process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536, encoding='utf-8')
+        self._process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536, encoding='utf-8')
 
-        while self._is_running:
-            stdout_thread = threading.Thread(target=self._put_stream, args=(process.stdout,))
-            stderr_thread = threading.Thread(target=self._put_stream, args=(process.stderr, True))
+        stdout_thread = threading.Thread(target=self._read_stdout)
+        stderr_thread = threading.Thread(target=self._read_stderr)
 
-            stdout_thread.start()
-            stderr_thread.start()
+        stdout_thread.start()
+        stderr_thread.start()
 
         stdout_thread.join()
         stderr_thread.join()
 
-        process.terminate()
+        self._process.terminate()
 
-    # def _auto_encoder(self, stream: io.TextIOWrapper) -> str:
-    #     for encoding in ['utf-8', 'shift-jis', 'euc-jp', 'cp932']:
-    #         try:
-    #             return stream.read().decode(encoding)
+    def _read_stdout(self):
+        while self._is_running:
+            readline = self._process.stdout.readline().strip()
 
-    #         except UnicodeDecodeError:
-    #             continue
-
-    #     print('Warning: Encoding is not supported.')
-    #     return stream.read()
-
-    def _put_stream(self, stream: io.TextIOWrapper, stderr: bool = False):
-        readline = stream.readline()
-
-        if readline:
-            if not stderr:
+            if readline:
                 self._put(stdout=readline)
 
-            else:
-                self._put(stderr=readline)
+    def _read_stderr(self):
+        while self._is_running:
+            readline = self._process.stderr.readline().strip()
+
+            if readline:
                 print(f'Warning: {readline}')
+                self._put(stderr=readline)
 
     def _put(self, stdout: str = None, stderr: str = None):
-        self._output.put({
-            'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'stdout': stdout,
-            'stderr': stderr,
-        })
+        self._output.put(self._readline(
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            stdout,
+            stderr,
+        ))
 
     def is_empty(self) -> bool:
         return self._output.empty()
