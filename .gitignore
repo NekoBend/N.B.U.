@@ -1,5 +1,6 @@
 __pycache__/*
 test/*
+.cache/*
 
 module_test.ipynb
 module_test.py
