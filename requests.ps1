@@ -59,10 +59,18 @@ try {
     # Check PowerShell version
     if ($PSVersionTable.PSVersion.Major -lt 6) {
         # Convert response content from ISO-8859-1 to UTF-8 for legacy versions
-        ($utfEncoding.GetString([System.Text.Encoding]::GetEncoding("ISO-8859-1").GetBytes($response.Content))) | Out-File -FilePath $dumpPath -Encoding utf8
+        $responseContent = $utfEncoding.GetString([System.Text.Encoding]::GetEncoding("ISO-8859-1").GetBytes($response.Content))
+        $responseContent | Out-File -FilePath $dumpPath -Encoding utf8
+
+        # Output response content
+        Write-Output $responseContent
+
     } else {
         # Directly save response content for newer versions
         $response.Content | Out-File -FilePath $dumpPath -Encoding utf8
+
+        # Output response content
+        Write-Output $response.Content
     }
 
 } catch {
