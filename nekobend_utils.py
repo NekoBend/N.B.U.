@@ -88,20 +88,20 @@ class PwshRequests:
 
 class CmdObserver:
     _is_running = False
-    _readline = namedtuple('Readline', ['time', 'stdout', 'stderr'])
-    _output = queue.Queue()
+    _Readline = namedtuple('Readline', ['time', 'stdout', 'stderr'])
+    _output_queue = queue.Queue()
 
-    def __init__(self, cmd: str) -> None:
-        self.cmd = cmd
+    def __init__(self, command: str) -> None:
+        self.command = command
 
     def __str__(self) -> str:
-        return self.cmd
+        return self.command
 
     def __repr__(self) -> str:
-        return self.cmd
+        return self.command
 
     def _run(self):
-        self._process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536, encoding='utf-8')
+        self._process = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=65536, encoding='utf-8')
 
         stdout_thread = threading.Thread(target=self._read_stdout)
         stderr_thread = threading.Thread(target=self._read_stderr)
@@ -119,7 +119,7 @@ class CmdObserver:
             readline = self._process.stdout.readline().strip()
 
             if readline:
-                self._put(stdout=readline)
+                self._put_output(stdout=readline)
 
     def _read_stderr(self):
         while self._is_running:
@@ -127,36 +127,40 @@ class CmdObserver:
 
             if readline:
                 print(f'Warning: {readline}')
-                self._put(stderr=readline)
+                self._put_output(stderr=readline)
 
-    def _put(self, stdout: str = None, stderr: str = None):
-        self._output.put(self._readline(
+    def _put_output(self, stdout: str = None, stderr: str = None):
+        self._output_queue.put(self._Readline(
             datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             stdout,
             stderr,
         ))
 
-    def is_empty(self) -> bool:
-        return self._output.empty()
+    @classmethod
+    def is_empty(cls) -> bool:
+        return cls._output_queue.empty()
 
-    def get(self, timeout: int = 1) -> dict | None:
+    @classmethod
+    def get(cls, timeout: int = 1) -> dict | None:
         try:
-            return self._output.get(timeout=timeout)
-
+            return cls._output_queue.get(timeout=timeout)
         except queue.Empty:
-            return False
+            return None
 
-    def is_running(self) -> bool:
-        return self._is_running
+    @classmethod
+    def is_running(cls) -> bool:
+        return cls._is_running
 
-    def start(self):
-        self._is_running = True
-        self._thread = threading.Thread(target=self._run)
-        self._thread.start()
+    @classmethod
+    def start(cls):
+        cls._is_running = True
+        cls._thread = threading.Thread(target=cls._run)
+        cls._thread.start()
 
-    def stop(self):
-        self._is_running = False
-        self._thread.join()
+    @classmethod
+    def stop(cls):
+        cls._is_running = False
+        cls._thread.join()
 
 
 class Clipboard:
