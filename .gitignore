@@ -1,6 +1,5 @@
-__pycache__/*
-test/*
-.cache/*
+*
+.gitignore
 
-module_test.ipynb
-module_test.py
+!nekobendUtils/*.py
+!nekobendUtils/*.ps1
