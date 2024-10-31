@@ -37,10 +37,13 @@ class CmdObserver:
             stdout_thread.start()
             stderr_thread.start()
 
+            self._process.wait()
+
+            self._is_running = False
+
             stdout_thread.join()
             stderr_thread.join()
 
-            self._process.wait()
         except Exception as e:
             print(f"Error running command: {e}")
 
