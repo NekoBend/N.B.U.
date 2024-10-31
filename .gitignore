@@ -1,5 +1,0 @@
-*
-.gitignore
-
-!nekobendUtils/*.py
-!nekobendUtils/*.ps1
