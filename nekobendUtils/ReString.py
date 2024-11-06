@@ -12,6 +12,9 @@ class ReString(str):
     def to_string(self) -> str:
         return str(self)
 
+    def print(self) -> None:
+        print(self)
+
     def match(self, pattern: str, flags: int = 0) -> Optional[re.Match[str]]:
         return re.match(pattern, self, flags)
 
