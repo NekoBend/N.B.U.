@@ -2,7 +2,7 @@ import subprocess
 
 
 class Clipboard:
-    __module__ = "nekobendUtils"
+    __module__ = "src"
 
     @staticmethod
     def copy_to_clipboard(text: str):

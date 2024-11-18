@@ -7,7 +7,7 @@ from typing import Optional
 
 
 class CmdObserver:
-    __module__ = "nekobendUtils"
+    __module__ = "src"
     _Readline = namedtuple("Readline", ["time", "stdout", "stderr"])
 
     def __init__(self, command: str) -> None:

@@ -5,7 +5,7 @@ import subprocess
 
 
 class PwshRequests:
-    __module__ = "nekobendUtils"
+    __module__ = "src"
 
     @staticmethod
     def _calculate_hash(data_json):

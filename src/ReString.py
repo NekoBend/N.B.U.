@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 
 class ReString(str):
-    __module__ = "nekobendUtils"
+    __module__ = "src"
 
     def __new__(cls, value: str) -> "ReString":
         return super().__new__(cls, value)
