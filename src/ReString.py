@@ -2,9 +2,8 @@ import re
 from typing import Union, List, Any, Iterator, SupportsIndex, Tuple, Optional
 from collections.abc import Iterable
 
-
 class ReString(str):
-    __module__ = "src"
+    __module__ = "nekobendUtils"
 
     def __new__(cls, value: str) -> "ReString":
         return super().__new__(cls, value)
