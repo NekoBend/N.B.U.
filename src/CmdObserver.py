@@ -5,9 +5,8 @@ from collections import namedtuple
 from datetime import datetime
 from typing import Optional
 
-
 class CmdObserver:
-    __module__ = "src"
+    __module__ = "nekobendUtils"
     _Readline = namedtuple("Readline", ["time", "stdout", "stderr"])
 
     def __init__(self, command: str) -> None:
@@ -56,17 +55,17 @@ class CmdObserver:
         return line.decode("utf-8", errors="ignore")
 
     def _read_stdout(self) -> None:
-        while self.is_running() and self._process and self._process.stdout:
-            readline: bytes = self._process.stdout.readline().strip()
-            if readline:
-                self._put_output(stdout=self._auto_encoder(readline))
+        if self._process and self._process.stdout:
+            for readline in iter(self._process.stdout.readline, b""):
+                if readline:
+                    self._put_output(stdout=self._auto_encoder(readline.strip()))
 
     def _read_stderr(self) -> None:
-        while self.is_running() and self._process and self._process.stderr:
-            readline: bytes = self._process.stderr.readline().strip()
-            if readline:
-                print(f"Warning: {readline}")
-                self._put_output(stderr=self._auto_encoder(readline))
+        if self._process and self._process.stderr:
+            for readline in iter(self._process.stderr.readline, b""):
+                if readline:
+                    print(f"Warning: {self._auto_encoder(readline.strip())}")
+                    self._put_output(stderr=self._auto_encoder(readline.strip()))
 
     def _put_output(
         self, stdout: Optional[str] = None, stderr: Optional[str] = None
@@ -92,15 +91,17 @@ class CmdObserver:
         return self._is_running and not self._stop_event.is_set()
 
     def start(self) -> None:
-        self._is_running = True
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run)
-        self._thread.start()
+        if not self._is_running:
+            self._is_running = True
+            self._stop_event.clear()
+            self._thread = threading.Thread(target=self._run)
+            self._thread.start()
 
     def stop(self) -> None:
-        self._is_running = False
-        self._stop_event.set()
-        if self._process:
-            self._process.terminate()
-        if self._thread is not None:
-            self._thread.join()
+        if self._is_running:
+            self._is_running = False
+            self._stop_event.set()
+            if self._process:
+                self._process.terminate()
+            if self._thread is not None:
+                self._thread.join()
