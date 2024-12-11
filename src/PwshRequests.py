@@ -20,7 +20,7 @@ class PwshRequests:
             "-ExecutionPolicy",
             "Bypass",
             "-File",
-            "REQUESTS.PS1",
+            "module/REQUESTS.PS1",
             "-dataJson",
             data_json,
             "-dir",
