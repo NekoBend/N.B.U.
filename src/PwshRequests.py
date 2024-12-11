@@ -42,7 +42,7 @@ class PwshRequests:
 
     @staticmethod
     def request(
-        method: str, url: str, headers: Optional[dict] = None, data: Optional[dict] = None, cache: bool = False, cache_dir: str = ".\.cache"
+        method: str, url: str, headers: Optional[dict] = None, data: Optional[dict] = None, cache: bool = False, cache_dir: str = "./.cache"
     ) -> str:
         if method.upper() in ["PUT", "DELETE"]:
             cache = False
@@ -75,13 +75,13 @@ class PwshRequests:
         return response_content
 
     @staticmethod
-    def get(url: str, headers: Optional[dict] = None, cache: bool = False, cache_dir: str = ".\.cache") -> str:
+    def get(url: str, headers: Optional[dict] = None, cache: bool = False, cache_dir: str = "./.cache") -> str:
         return PwshRequests.request(
             "GET", url, headers=headers, cache=cache, cache_dir=cache_dir
         )
 
     @staticmethod
-    def post(url: str, headers: Optional[dict] = None, data: Optional[dict] = None, cache: bool = False, cache_dir: str = ".\.cache") -> str:
+    def post(url: str, headers: Optional[dict] = None, data: Optional[dict] = None, cache: bool = False, cache_dir: str = "./.cache") -> str:
         return PwshRequests.request(
             "POST", url, headers=headers, data=data, cache=cache, cache_dir=cache_dir
         )
