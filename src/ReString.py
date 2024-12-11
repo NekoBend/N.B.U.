@@ -2,6 +2,7 @@ import re
 from typing import Union, List, Any, Iterator, SupportsIndex, Tuple, Optional
 from collections.abc import Iterable
 
+
 class ReString(str):
     __module__ = "nekobendUtils"
 
