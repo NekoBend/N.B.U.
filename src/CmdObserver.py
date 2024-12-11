@@ -1,16 +1,20 @@
 import queue
 import subprocess
 import threading
+import warnings
+
 from collections import namedtuple
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Union
+
 
 class CmdObserver:
     __module__ = "nekobendUtils"
     _Readline = namedtuple("Readline", ["time", "stdout", "stderr"])
 
-    def __init__(self, command: str) -> None:
+    def __init__(self, command: str, is_realtime: bool = False) -> None:
         self.command: str = command
+        self.is_realtime: bool = is_realtime
         self._thread: Optional[threading.Thread] = None
         self._is_running: bool = False
         self._output_queue: queue.Queue[CmdObserver._Readline] = queue.Queue()
@@ -26,11 +30,14 @@ class CmdObserver:
     def _run(self) -> None:
         try:
             self._process = subprocess.Popen(
-                self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+                self.command.split(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=False,
             )
 
-            stdout_thread: threading.Thread = threading.Thread(target=self._read_stdout)
-            stderr_thread: threading.Thread = threading.Thread(target=self._read_stderr)
+            stdout_thread = threading.Thread(target=self._read_stdout)
+            stderr_thread = threading.Thread(target=self._read_stderr)
 
             stdout_thread.start()
             stderr_thread.start()
@@ -38,15 +45,17 @@ class CmdObserver:
             self._process.wait()
 
             self._is_running = False
+            self._stop_event.set()
 
             stdout_thread.join()
             stderr_thread.join()
 
         except Exception as e:
-            print(f"Error running command: {e}")
+            warnings.warn(f"Error running command: {e}")
 
-    def _auto_encoder(self, line: bytes) -> str:
-        encode_list: list[str] = ["utf-8", "shift-jis", "euc-jp", "cp932"]
+    @staticmethod
+    def _auto_encoder(line: bytes) -> str:
+        encode_list: List[str] = ["utf-8", "shift-jis", "euc-jp", "cp932"]
         for encode in encode_list:
             try:
                 return line.decode(encode)
@@ -58,14 +67,20 @@ class CmdObserver:
         if self._process and self._process.stdout:
             for readline in iter(self._process.stdout.readline, b""):
                 if readline:
-                    self._put_output(stdout=self._auto_encoder(readline.strip()))
+                    decoded_line = self._auto_encoder(readline.strip())
+                    self._put_output(stdout=decoded_line, stderr=None)
+                    if self.is_realtime:
+                        warnings.warn(decoded_line)
 
     def _read_stderr(self) -> None:
         if self._process and self._process.stderr:
             for readline in iter(self._process.stderr.readline, b""):
                 if readline:
-                    print(f"Warning: {self._auto_encoder(readline.strip())}")
-                    self._put_output(stderr=self._auto_encoder(readline.strip()))
+                    decoded_line = self._auto_encoder(readline.strip())
+                    warnings.warn(f"Warning: {decoded_line}")
+                    self._put_output(stderr=decoded_line)
+                    if self.is_realtime:
+                        warnings.warn(decoded_line)
 
     def _put_output(
         self, stdout: Optional[str] = None, stderr: Optional[str] = None
@@ -90,18 +105,33 @@ class CmdObserver:
     def is_running(self) -> bool:
         return self._is_running and not self._stop_event.is_set()
 
-    def start(self) -> None:
+    def start(self) -> Union[subprocess.Popen, str, None]:
         if not self._is_running:
             self._is_running = True
             self._stop_event.clear()
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
 
+            if self.is_realtime:
+                return self._process
+            else:
+                self._thread.join()
+                output_lines: List[str] = []
+                while not self.is_empty():
+                    output = self.get()
+                    if output:
+                        output_lines.append(
+                            f"{output.time} - STDOUT: {output.stdout if output.stdout else ''} STDERR: {output.stderr if output.stderr else ''}"
+                        )
+                return "\n".join(output_lines)
+
     def stop(self) -> None:
         if self._is_running:
             self._is_running = False
             self._stop_event.set()
             if self._process:
-                self._process.terminate()
+                if self._process.poll() is None:
+                    self._process.kill()
+
             if self._thread is not None:
                 self._thread.join()
