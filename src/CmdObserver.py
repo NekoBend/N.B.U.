@@ -96,9 +96,19 @@ class CmdObserver:
     def is_empty(self) -> bool:
         return self._output_queue.empty()
 
-    def get(self, timeout: int = 1) -> Optional[_Readline]:
+    def get(self, timeout: int = 1) -> Union[List[Optional[_Readline]], Optional[_Readline]]:
         try:
-            return self._output_queue.get(timeout=timeout)
+            if not self.is_realtime:
+                outputs = []
+
+                while not self.is_empty():
+                    if output := self._output_queue.get(timeout=timeout):
+                        outputs.append(output)
+
+                return outputs
+
+            else:
+                return self._output_queue.get(timeout=timeout)
         except queue.Empty:
             return None
 
@@ -112,18 +122,8 @@ class CmdObserver:
             self._thread = threading.Thread(target=self._run)
             self._thread.start()
 
-            if self.is_realtime:
-                return self._process
-            else:
+            if not self.is_realtime:
                 self._thread.join()
-                output_lines: List[str] = []
-                while not self.is_empty():
-                    output = self.get()
-                    if output:
-                        output_lines.append(
-                            f"{output.time} - STDOUT: {output.stdout if output.stdout else ''} STDERR: {output.stderr if output.stderr else ''}"
-                        )
-                return "\n".join(output_lines)
 
     def stop(self) -> None:
         if self._is_running:
