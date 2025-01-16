@@ -1,6 +1,6 @@
 import re
-from typing import Union, List, Any, Iterator, SupportsIndex, Tuple, Optional
-from collections.abc import Iterable
+from typing import Union, List, Any, Iterator, SupportsIndex, Tuple, Optional, Iterable
+from collections.abc import Iterable as _Iterable
 
 
 class ReString(str):
@@ -27,8 +27,7 @@ class ReString(str):
     def sub(
         self, pattern: str, repl: str, count: int = 0, flags: int = 0
     ) -> "ReString":
-        result = re.sub(pattern, repl, self, count, flags)
-        return ReString(result)
+        return ReString(re.sub(pattern, repl, self, count, flags))
 
     def subn(
         self, pattern: str, repl: str, count: int = 0, flags: int = 0
@@ -38,13 +37,23 @@ class ReString(str):
 
     def resplit(
         self, pattern: str, maxsplit: int = 0, flags: int = 0
-    ) -> List[Union["ReString", Any]]:
+    ) -> List["ReString"]:
         results = re.split(pattern, self, maxsplit, flags)
         return [ReString(item) for item in results if isinstance(item, str)]
 
     def findall(self, pattern: str, flags: int = 0) -> List[Any]:
         results = re.findall(pattern, self, flags)
-        return [ReString(item) for item in results if isinstance(item, str)]
+        converted = []
+        for item in results:
+            if isinstance(item, str):
+                converted.append(ReString(item))
+            elif isinstance(item, tuple):
+                converted.append(
+                    tuple(ReString(x) if isinstance(x, str) else x for x in item)
+                )
+            else:
+                converted.append(item)
+        return converted
 
     def finditer(self, pattern: str, flags: int = 0) -> Iterator[re.Match[str]]:
         return re.finditer(pattern, self, flags)
@@ -79,10 +88,22 @@ class ReString(str):
     def replace(self, old: str, new: str, count: SupportsIndex = -1) -> "ReString":
         return ReString(super().replace(old, new, count))
 
-    def split(  # type: ignore
-        self, sep: Optional[str] = None, maxsplit: int = -1
+    def split(
+        self, sep: Optional[str] = None, maxsplit: SupportsIndex = -1
     ) -> List["ReString"]:
         return [ReString(item) for item in super().split(sep, maxsplit)]
 
-    def join(self, iterable: Iterable[str]) -> "ReString":
-        return ReString(super().join(iterable))
+    def join(self, iterable: Iterable[Union[str, "ReString"]]) -> "ReString":
+        return ReString(super().join(str(item) for item in iterable))
+
+    def swapcase(self) -> "ReString":
+        return ReString(super().swapcase())
+
+    def zfill(self, width: int) -> "ReString":
+        return ReString(super().zfill(width))
+
+    def casefold(self) -> "ReString":
+        return ReString(super().casefold())
+
+    def encode(self, encoding: str = "utf-8", errors: str = "strict") -> bytes:
+        return super().encode(encoding, errors)
