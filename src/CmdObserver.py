@@ -72,7 +72,7 @@ class CmdObserver:
 
             except UnicodeDecodeError:
                 continue
-            
+
         return line.decode("utf-8", errors="ignore")
 
     def _read_stdout(self) -> None:
