@@ -65,11 +65,14 @@ class CmdObserver:
     @staticmethod
     def _auto_encoder(line: bytes) -> str:
         encode_list: List[str] = ["utf-8", "shift-jis", "euc-jp", "cp932"]
+
         for enc in encode_list:
             try:
                 return line.decode(enc)
+
             except UnicodeDecodeError:
                 continue
+            
         return line.decode("utf-8", errors="ignore")
 
     def _read_stdout(self) -> None:
@@ -86,8 +89,6 @@ class CmdObserver:
                     decoded_line: str = self._auto_encoder(readline.strip())
                     warnings.warn(f"Warning: {decoded_line}")
                     self._put_output(stderr=decoded_line)
-                    if self.is_realtime:
-                        pass
 
     def _put_output(
         self,
