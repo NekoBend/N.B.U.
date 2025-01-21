@@ -5,7 +5,7 @@ import subprocess
 from typing import Optional
 
 class PwshRequests:
-    __module__ = "nekobendUtils"
+    __module__ = "NekoBendUtils"
 
     @staticmethod
     def _calculate_hash(data_json: str) -> str:

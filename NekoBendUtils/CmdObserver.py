@@ -10,7 +10,7 @@ from typing import Optional, List, Union
 
 
 class CmdObserver:
-    __module__ = "nekobendUtils"
+    __module__ = "NekoBendUtils"
     _Readline = namedtuple("Readline", ["time", "stdout", "stderr"])
 
     def __init__(
